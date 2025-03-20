@@ -2,3 +2,6 @@ CA_youtube_trending_data_clean.csv
 GB_youtube_trending_data_clean.csv
 US_youtube_trending_data_clean.csv
 .ipynb_checkpoints
+CA_category_id.json
+GB_category_id.json
+US_category_id.json
