@@ -1,0 +1,11 @@
+CA_youtube_trending_data_clean.csv
+GB_youtube_trending_data_clean.csv
+US_youtube_trending_data_clean.csv
+.ipynb_checkpoints
+CA_category_id.json
+# Determine a threshold: e.g., the 75th percentile of view counts
+threshold = sample_dislikes["likes"].quantile(0.75)
+print("75th percentile of view likes:", threshold)
+
+# Filter the data to include only view counts below the threshold
+filtered_sample_likes = sample_likes[sample_likes["likes"] <= threshold]
