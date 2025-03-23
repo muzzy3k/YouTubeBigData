@@ -1,3 +1,4 @@
+- clone repo
 - download data from https://elizabethtown-my.sharepoint.com/:u:/g/personal/islamm_etown_edu/EUQSxxFLZiRAnlVD6FkzX2ABq9a5lYj7NR8PYIEkU_8IVQ
-- extract files to directory
+- extract data files to repo directory
 - run through notebook
