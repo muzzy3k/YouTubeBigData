@@ -5,3 +5,5 @@ US_youtube_trending_data_clean.csv
 CA_category_id.json
 GB_category_id.json
 US_category_id.json
+models_*
+flagged
