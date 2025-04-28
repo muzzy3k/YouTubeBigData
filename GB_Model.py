@@ -21,6 +21,8 @@ spark = (
         .getOrCreate()
 )
 
+# to hide long warning messages in console output
+spark.sparkContext.setLogLevel("ERROR")
 
 # %%
 # Load the data
@@ -91,6 +93,7 @@ lower_udf = F.udf(lower_array, ArrayType(StringType()))
 # Lowercase the tag array column and store it in a new column 'tag_array_lower'
 df_ml = df_tags_split.withColumn("tag_array_lower", lower_udf(F.col("tag_array")))
 
+df_ml = df_ml.withColumn("channelTitle", F.lower(F.col("channelTitle")))
 
 # %%
 # Cast the selected numerical columns to string so we can treat them as categorical
@@ -103,14 +106,7 @@ df_ml = df_ml.withColumn("categoryID_str", F.col("categoryId").cast("string")) \
 
 # Define the list of our categorical columns (as strings)
 cat_cols = ["categoryID_str", "title_length_str", "word_count_str", 
-            "publish_month_str", "publish_dayofweek_str", "publish_hour_str"]
-
-
-# %%
-# getting unique tags to use as buckets in hashingtf
-unique_tag_count = df_ml.select(F.explode(F.col("tag_array_lower"))).distinct().count()
-print("Unique tags:", unique_tag_count)
-
+            "publish_month_str", "publish_dayofweek_str", "publish_hour_str", "channelTitle"]
 
 # %%
 # For each categorical column, create a StringIndexer (with handleInvalid="keep" to avoid errors)
@@ -191,4 +187,4 @@ pipeline_model.write().overwrite().save("models_GB/pipeline_model")
 lr_model_cr.write().overwrite().save("models_GB/lr_model_cr")
 lr_model_lr.write().overwrite().save("models_GB/lr_model_lr")
 
-
+spark.stop()

@@ -67,7 +67,7 @@ for region, paths in REGIONS.items():
 
 # —————————————
 # 3) The unified predict() function
-def predict(region, title, tags, category_name, publish_dt):
+def predict(region, channel_title, title, tags, category_name, publish_dt):
     # pick the right maps + models
     nti    = name_to_id_map[region]
     pipe   = pipeline_models[region]
@@ -92,6 +92,7 @@ def predict(region, title, tags, category_name, publish_dt):
         "publish_month_str":     str(dt.month),
         "publish_dayofweek_str": str(spark_dofw),
         "publish_hour_str":      str(dt.hour),
+        "channelTitle":          channel_title.lower()
     }
 
     # spark → features → preds
@@ -117,6 +118,7 @@ with gr.Blocks(title="YouTube Engagement Predictor (All Regions)") as demo:
         choices=category_names_map["CA"],
         label="Category"
     )
+    channel_tb  = gr.Textbox(lines=1, label="Channel Title")
     title_tb    = gr.Textbox(lines=2, label="Title")
     tags_tb     = gr.Textbox(lines=1, label="Tags (pipe-separated)")
     dt_tb       = gr.Textbox(lines=1, label="Publish datetime (YYYY-MM-DD HH:MM:SS)")
@@ -134,7 +136,7 @@ with gr.Blocks(title="YouTube Engagement Predictor (All Regions)") as demo:
     # wire up the predict button
     btn.click(
         fn=predict,
-        inputs=[region_dd, title_tb, tags_tb, category_dd, dt_tb],
+        inputs=[region_dd, channel_tb, title_tb, tags_tb, category_dd, dt_tb],
         outputs=[cr_out, lr_out]
     )
 

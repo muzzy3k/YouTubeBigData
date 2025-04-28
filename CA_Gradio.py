@@ -6,22 +6,18 @@ from pyspark.ml.pipeline import PipelineModel
 from pyspark.ml.regression import LinearRegressionModel
 
 # —————————————
-# 1) Load category JSON and build name→id map
-with open("CA_category_id.json", "r") as f:
+# 1) Load category JSON and build name→id map (unchanged)
+with open("US_category_id.json", "r") as f:
     cat_json = json.load(f)
-
-# items is a list of { "id": "...", "snippet": { "title": "Music", … } }
 name_to_id = {
     item["snippet"]["title"]: int(item["id"])
     for item in cat_json["items"]
-    if item["snippet"]["assignable"]  # only include assignable ones, if you like
+    if item["snippet"].get("assignable", False)
 }
-
-# optionally, sort names for nicer dropdown
 category_names = sorted(name_to_id.keys())
 
 # —————————————
-# 2) Start Spark and load your saved models
+# 2) Start Spark and load your saved models (unchanged)
 spark = (
     SparkSession.builder
         .appName("YouTube_Gradio_Inference")
@@ -34,8 +30,10 @@ pipeline_model = PipelineModel.load("models_CA/pipeline_model")
 lr_model_cr   = LinearRegressionModel.load("models_CA/lr_model_cr")
 lr_model_lr   = LinearRegressionModel.load("models_CA/lr_model_lr")
 
-def predict(title: str, tags: str, category_name: str, publish_dt: str):
-    # 3) Map the chosen category name back to its integer ID
+# —————————————
+# 3) Updated predict() to include channel_title
+def predict(channel_title: str, title: str, tags: str, category_name: str, publish_dt: str):
+    # map category name → ID
     category_id = name_to_id.get(category_name)
     if category_id is None:
         raise ValueError(f"Unknown category: {category_name!r}")
@@ -44,15 +42,16 @@ def predict(title: str, tags: str, category_name: str, publish_dt: str):
     dt = datetime.strptime(publish_dt, "%Y-%m-%d %H:%M:%S")
     spark_dofw = (dt.isoweekday() % 7) + 1
 
-    # build the same feature‐dict you used in training
+    # build the same feature‐dict you used in training, including channelTitle lowercased
     row = {
-        "tag_array_lower":       [t.lower() for t in tags.split("|") if t.strip()],
-        "categoryID_str":        str(category_id),
-        "title_length_str":      str(len(title)),
-        "word_count_str":        str(len(title.split())),
-        "publish_month_str":     str(dt.month),
-        "publish_dayofweek_str": str(spark_dofw),
-        "publish_hour_str":      str(dt.hour),
+        "tag_array_lower":        [t.lower() for t in tags.split("|") if t.strip()],
+        "categoryID_str":         str(category_id),
+        "title_length_str":       str(len(title)),
+        "word_count_str":         str(len(title.split())),
+        "publish_month_str":      str(dt.month),
+        "publish_dayofweek_str":  str(spark_dofw),
+        "publish_hour_str":       str(dt.hour),
+        "channelTitle":           channel_title.lower()   
     }
 
     # assemble & predict
@@ -64,14 +63,15 @@ def predict(title: str, tags: str, category_name: str, publish_dt: str):
     return float(cr_pred), float(lr_pred)
 
 # —————————————
-# 4) Build the Gradio interface with a Dropdown of names
+# 4) Add a Gradio Textbox for Channel Title
 iface = gr.Interface(
     fn=predict,
     inputs=[
+        gr.Textbox(lines=1, label="Channel Title"),
         gr.Textbox(lines=2, label="Title"),
         gr.Textbox(lines=1, label="Tags (pipe-separated)"),
         gr.Dropdown(choices=category_names, label="Category"),
-        gr.Textbox(lines=1, label="Publish datetime (YYYY-MM-DD HH:MM:SS)"),
+        gr.Textbox(lines=1, label="Publish datetime (YYYY-MM-DD HH:MM:SS)")         
     ],
     outputs=[
         gr.Number(label="Predicted Comments Ratio"),
